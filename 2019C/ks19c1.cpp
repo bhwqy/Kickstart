@@ -1,87 +1,94 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <map>
 using namespace std;
+
+#define mp make_pair
 typedef pair<int, int> pii;
 
-char instruction[50010];
-class IntervalSet {
-public:
-    IntervalSet() : data{{INT_MAX, INT_MAX}, {INT_MIN, INT_MIN}} {}
-    void insert(int x) {
-        auto i = data.lower_bound(make_pair(x, x));
-        auto j = i--;
-        if (i->second == x - 1 && j->first == x + 1) {
-            int t1 = i->first, t2 = j->second;
-            data.insert(make_pair(t1, t2));
-            data.erase(i);
-            data.erase(j);
-        }
-        else if (i->second == x - 1) {
-            int t1 = i->first;
-            data.insert(make_pair(t1, x));
-            data.erase(i);
-        }
-        else if (j->first == x + 1) {
-            int t2 = j->second;
-            data.insert(make_pair(x, t2));
-            data.erase(j);
-        }
-        else {
-            data.insert(make_pair(x, x));
-        }
-    }
-    int query(int x, bool pos_dir) {
-        auto i = data.lower_bound(make_pair(x, x));
-        auto j = i--;
-        if (pos_dir) {
-            if (j->first == x)
-                return j->second + 1;
-            else
-                return x + 1;
-        }
-        else {
-            if (i->second == x)
-                return i->first - 1;
-            else
-                return x - 1;
-        }
-    }
+const int maxn = 200005;
+map<pii, pii> fax, fay, up, down, le, ri;
 
-private:
-    set<pii> data;
-};
+pii findx(pii t) {
+	if (fax[t] == t)
+		return t;
+	return fax[t] = findx(fax[t]);
+}
 
+pii findy(pii t) {
+	if (fay[t] == t) 
+		return t;
+	return fay[t] = findy(fay[t]);
+}
+
+void addx(int x, int y) {
+	bool hl = fax.count(mp(x, y - 1)), hr = fax.count(mp(x, y + 1));
+	if (!hl && !hr)	{
+		fax[mp(x, y)] = mp(x, y);
+		le[mp(x, y)] = mp(x, y - 1);
+		ri[mp(x, y)] = mp(x, y + 1);
+	}
+	if (hl && !hr) {
+		fax[mp(x, y)] = findx(mp(x, y - 1));
+		ri[findx(mp(x, y - 1))] = mp(x, y + 1);
+	}
+	if (!hl && hr) {
+		fax[mp(x, y)] = findx(mp(x, y + 1));
+		le[findx(mp(x, y + 1))] = mp(x, y - 1);
+	}
+	if (hl && hr) {
+		pii f1 = findx(mp(x, y - 1));
+		pii f2 = findx(mp(x, y + 1));
+		fax[mp(x, y)] = fax[f2] = f1;
+		ri[f1] = ri[f2];
+	}
+}
+
+void addy(int x, int y) {
+	bool hu = fay.count(mp(x - 1, y)), hd = fay.count(mp(x + 1, y));
+	if (!hu && !hd) {
+		fay[mp(x, y)] = mp(x, y);
+		up[mp(x, y)] = mp(x - 1, y);
+		down[mp(x, y)] = mp(x + 1, y);
+	}
+	if (hu && !hd) {
+		fay[mp(x, y)] = findy(mp(x - 1, y));
+		down[findy(mp(x - 1, y))] = mp(x + 1, y);
+	}
+	if (!hu && hd) {
+		fay[mp(x, y)] = findy(mp(x + 1, y));
+		up[findy(mp(x + 1, y))] = mp(x - 1, y);
+	}
+	if (hu && hd) {
+		pii f1 = findy(mp(x - 1, y));
+		pii f2 = findy(mp(x + 1, y));
+		fay[mp(x, y)] = fay[f2] = f1;
+		down[f1] = down[f2];
+	}
+}
+
+char s[maxn];
 int main() {
-    int T;
-    scanf("%d", &T);
-    for (int cse = 1; cse <= T; ++cse) {
-        int n, r, c, x, y;
-        scanf("%d%d%d%d%d%s", &n, &r, &c, &x, &y, instruction);
-        vector<IntervalSet> rows(r), cols(c);
-        x--, y--;
-        for (int i = 0; i < n; ++i) {
-            int dx, dy;
-            auto c = instruction[i];
-            if (c == 'N'){
-                dy = y;
-                dx = cols[y].query(x - 1, false);
-            }
-            else if (c == 'S') {
-                dy = y;
-                dx = cols[y].query(x + 1, true);
-            }
-            else if (c == 'W') {
-                dx = x;
-                dy = rows[x].query(y - 1, false);
-            }
-            else {
-                dx = x;
-                dy = rows[x].query(y + 1, true);
-            }
-            rows[x].insert(y), rows[y].insert(x);
-            x = dx, y = dy;
-        }
-        x++, y++;
-        printf("Case #%d: %d %d\n", cse, x, y);
-    }
-    return 0;
+	int T;
+	scanf("%d", &T);
+	for (int cse = 1; cse <= T; ++cse) {
+		int n, r, c, sr, sc;
+		scanf("%d%d%d%d%d%s", &n, &r, &c, &sr, &sc, s);
+		fax.clear(); fay.clear(); up.clear(); down.clear(); le.clear(); ri.clear();
+		pii now = mp(sr, sc); fax[now] = now; fay[now] = now;
+		up[now] = mp(now.first - 1, now.second); 
+		down[now] = mp(now.first + 1, now.second);
+		le[now] = mp(now.first, now.second - 1);
+		ri[now] = mp(now.first, now.second + 1);
+		for (int i = 0; i < n; ++i) {
+			if (s[i] == 'N') now = up[findy(now)];
+			if (s[i] == 'S') now = down[findy(now)];
+			if (s[i] == 'W') now = le[findx(now)];
+			if (s[i] == 'E') now = ri[findx(now)];
+			int x = now.first, y = now.second;
+			addx(x, y); addy(x, y);
+		}
+		printf("Case #%d: %d %d\n", cse, now.first, now.second);
+	}
+	return 0;
 }
